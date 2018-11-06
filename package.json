@@ -1,0 +1,23 @@
+{
+	"name": "generx",
+	"version": "0.0.1",
+	"description": "JavaScript generators extended with forEach, map, reduce ... most standard Array methods.",
+	"private": false,
+	"isomorphic": true,
+	"keywords": [
+		"generator"
+	],
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/anywhichway/generx.git"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"chai": "^4.2.0",
+		"mocha": "^3.5.3"
+	},
+	"engines": {
+		"node": "9.x"
+	}
+}
