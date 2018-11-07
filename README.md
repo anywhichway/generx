@@ -2,6 +2,9 @@
 
 JavaScript generators extended with forEach, map, reduce ... most standard Array methods.
 
+For situations where less than the entire generator yield set is required, this will produce results faster than first converting the generator results into an array while 
+also allowing the developer to use the expressive nature of functional oriented array methods in place of `.next()` of `for(let item of <generator>)` code.
+
 # Installation
 
 `npm install generx`
