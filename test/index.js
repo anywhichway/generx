@@ -76,6 +76,11 @@ describe("sync",function() {
 		chai.expect(r1).equal(r2);
 		done();
 	});
+	it("reverse",function() {
+		const a1 = testarray.reverse(),
+			a2 = synchronous().reverse();
+		chai.expect(a1.every((item,i) => item===a2[i])).equal(true);
+	});
 	it("slice part",function(done) {
 		const a1 = testarray.slice(1,2),
 			a2 = synchronous().slice(1,2);
@@ -137,29 +142,34 @@ describe("async",function() {
 	it("map",async function() {
 		const a1 = testarray.map(i => i),
 			a2 = await asynchronous().map(i => i);
-		chai.expect(a1.every((item,i) => item===a2[i])).equal(true);
+		chai.expect(a1.every(async (item,i) => item===await a2[i])).equal(true);
 	});
 	it("reduce",async function() {
 		const r1 = testarray.reduce((accum,i) => accum += i,0),
 			r2 = await asynchronous().reduce((accum,i) => accum += i,0);
 		chai.expect(r1).equal(r2);
 	});
+	it("reverse",async function() {
+		const a1 = testarray.reverse(),
+			a2 = await asynchronous().reverse();
+		chai.expect(a1.every(async (item,i) => item===await a2[i])).equal(true);
+	});
 	it("slice part",async function() {
 		const a1 = testarray.slice(1,2),
 			a2 = await asynchronous().slice(1,2);
-		chai.expect(a1.every((item,i) => item===a2[i])).equal(true);
+		chai.expect(a1.every(async (item,i) => item===await a2[i])).equal(true);
 	});
 	it("slice full",async function() {
 		const a1 = testarray.slice(),
 			a2 = await asynchronous().slice();
-		chai.expect(a2.every((item,i) => item===a1[i])).equal(true);
+		chai.expect(await a2.every(async (item,i) => item===a1[i])).equal(true);
 	});
 	it("slice twice",async function() {
 		const a1 = testarray.slice(1,3),
 			gen = asynchronous(),
 			a2 = await gen.slice(0,1),
 			a3 = await gen.slice(1,3);
-		chai.expect(a1.every((item,i) => item===a3[i])).equal(true);
+		chai.expect(a1.every(async (item,i) => item===await a3[i])).equal(true);
 	});
 });
 

@@ -1,4 +1,5 @@
-# generx
+# generx v0.0.2
+
 JavaScript generators extended with forEach, map, reduce ... most standard Array methods.
 
 # Installation
@@ -52,6 +53,9 @@ The below functions are currently supported:
 ```
 
 # Release History (reverse chronological order)
+
+2018-11-07 v0.0.2 Fixed reverse. It was throwing an error due to undefined function. Modified `map` and `slice` to return a `generx` enhanced 
+generator rather than array. This will produce results faster for mapped functions and for slices less than the full generator yield results.
 
 2018-11-06 v0.0.1 Initial public release
 

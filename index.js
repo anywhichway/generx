@@ -1,9 +1,11 @@
 
+const ASYNCPROTO = Object.getPrototypeOf(async function(){}),
+	ASYNCGENERATORPROTO = Object.getPrototypeOf(async function*() {}());
 
-export function generx(f) {
-	const generator = f(""),
+export function generx(f,recursed) {
+	const generator = typeof(f)==="function" ? f("") : f,
 		proto = Object.getPrototypeOf(generator),
-		isasync = Object.getPrototypeOf(generator).constructor===Object.getPrototypeOf(async function*() {}()).constructor;
+		isasync = Object.getPrototypeOf(generator).constructor===ASYNCGENERATORPROTO.constructor;
 	if(isasync) {
 		proto.every = async function(f) {
 			for(let i=0;await this.proxy[i] && i<this.length;i++) {
@@ -12,7 +14,10 @@ export function generx(f) {
 			return true;
 		}
 		proto.finalize = async function() {
-			return (await this.slice()).length;
+			for(let i=0;await this.proxy[i] && i<this.length;i++) {
+				;
+			}
+			return this.length;
 		}
 		proto.find = async function(f) {
 			for(let i=0;await this.proxy[i] && i<this.length;i++) {
@@ -54,13 +59,12 @@ export function generx(f) {
 			}
 			return last;
 		}
-		proto.map = async function(f) {
-			const result = [];
-			for(let i=0;await this.proxy[i]&& i<this.length;i++) {
-				result.push(await f(this[i],i,this));
+		proto.map = async function*(f) {
+			for(let i=0;await this.proxy[i] && i<this.length;i++) {
+				yield await f(this[i],i,this);
 			}
-			return result;
 		}
+		if(!recursed) proto.map = generx(proto.map,true);
 		proto.reduce = async function(f,accum) {
 			let initialized = accum!==undefined;
 			for(let i=0;await this.proxy[i] && i<this.length;i++) {
@@ -73,25 +77,23 @@ export function generx(f) {
 			}
 			return accum;
 		}
-		proto.reverse = async function() {
-			const me = this;
-			let generator = function*() {
-				const items = [];
-				for (const item of me) {
-					items.unshift(item);
-				}
-				for(const item of items) yield item;
-			}
-			generator = enhanceGenerator(generator);
-			return generator();
-		}
-		proto.slice = async function(start=0,end=Infinity) {
+		proto.reverse = async function*() {
 			const result = [];
-			for(let i=start,j=0;i<end && await this.proxy[i] && i<this.length;i++,j++) {
-					result[j]=this[i];
+			for(let i=0;i<this.length;i++) {
+				result.unshift(await this.proxy[i]);
 			}
-			return result;
+			return generx(async function*() { 
+				while(result.length>0) {
+					yield result.pop();
+				}
+			})();
 		}
+		proto.slice = async function*(start=0,end=Infinity) {
+			for(let i=start,j=0;i<end && await this.proxy[i] && i<this.length;i++,j++) {
+					yield this[i];
+			}
+		}
+		if(!recursed) proto.slice = generx(proto.slice,true);
 		proto.sort = async function(f) {
 			return this.slice().sort(f)
 		}
@@ -109,7 +111,10 @@ export function generx(f) {
 			return true;
 		}
 		proto.finalize = function() {
-			return this.slice().length;
+			for(let i=0;i<this.length;i++) {
+				this.proxy[i];
+			}
+			return this.length;
 		}
 		proto.find = function(f) {
 			for(let i=0;i<this.length;i++) {
@@ -152,13 +157,12 @@ export function generx(f) {
 			}
 			return last;
 		}
-		proto.map = function(f) {
-			const result = [];
+		proto.map = function*(f) {
 			for(let i=0;i<this.length;i++) {
-				result.push(f(this.proxy[i],i,this));
+				yield f(this.proxy[i],i,this);
 			}
-			return result;
 		}
+		if(!recursed) proto.map = generx(proto.map,true);
 		proto.reduce = function(f,accum) {
 			let initialized = accum!==undefined;
 			for(let i=0;i<this.length;i++) {
@@ -172,24 +176,22 @@ export function generx(f) {
 			return accum;
 		}
 		proto.reverse = function() {
-			const me = this;
-			let generator = function*() {
-				const items = [];
-				for (const item of me) {
-					items.unshift(item);
-				}
-				for(const item of items) yield item;
-			}
-			generator = enhanceGenerator(generator);
-			return generator();
-		}
-		proto.slice = function(start=0,end=Infinity) {
 			const result = [];
-			for(let i=start,j=0;i<end && i<this.length;i++,j++) {
-				result[j] = this.proxy[i];
+			for(let i=0;i<this.length;i++) {
+				result.unshift(this.proxy[i]);
 			}
-			return result;
+			return generx(function*() { 
+				while(result.length>0) {
+					yield result.pop();
+				}
+			})();
 		}
+		proto.slice = function*(start=0,end=Infinity) {
+			for(let i=start,j=0;i<end && i<this.length;i++,j++) {
+				yield this.proxy[i];
+			}
+		}
+		if(!recursed) proto.slice = generx(proto.slice,true);
 		proto.sort = function(f) {
 			return this.slice().sort(f)
 		}
@@ -204,7 +206,7 @@ export function generx(f) {
 	return new Proxy(f,{
 		apply(target,thisArg,argumentsList) {
 			let length = Infinity;
-			const generator = target.call(thisArg,...argumentsList),	
+			const generator = target.call(thisArg,...argumentsList),
 				yielded = [],
 				proxy = new Proxy(generator,{
 					get(target,property) {
@@ -229,6 +231,7 @@ export function generx(f) {
 										} else {
 											target[j] = yielded[j] = item.value;
 										}
+										return item.value;
 									});
 								}
 								target[yielded.length] = yielded[yielded.length] = value;
@@ -248,6 +251,7 @@ export function generx(f) {
 										} else {
 											target[k] = yielded[k] = item.value;
 										}
+										return item.value;
 									});
 								} else {
 									if(next.done) {
