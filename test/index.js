@@ -205,6 +205,42 @@ describe("examples",function() {
 		const result = await example3().reduce(async (accum,item) => accum += item); // result = 15
 		chai.expect(result).equal(15);
 	});
+	it("example4",function(done) {
+		function* example4() {
+			for(const item of [1,2,3,4,5]) {
+				yield item;
+			}
+		}
+		example4 = generx(example4);
+		const result = example4()[2]; // result = 3
+		chai.expect(result).equal(3);
+		done();
+	});
+	it("example5",async function() {
+		async function* example5() {
+			for(const item of [1,2,3,4,5]) {
+				yield item;
+			}
+		}
+		example5 = generx(example5);
+		const	values = example5(),
+			promise = values[0],
+			result = await values[1]; // result = 2
+		chai.expect(promise).to.be.instanceof(Promise);
+		chai.expect(result).equal(2);
+	});
+	it("example6",async function() {
+		async function* example6() {
+			for(const item of [1,2,3,4,5]) {
+				yield item;
+			}
+		}
+		example6 = generx(example6);
+		const values = example6();
+		for(let i=0;await values[i] && i<values.length;i++) {
+			chai.expect(values[i]).equal(i+1);
+		}
+	})
 })
 		
 		

@@ -1,9 +1,9 @@
-# generx v0.0.2
+# generx v0.0.3
 
 JavaScript generators extended with forEach, map, reduce ... most standard Array methods.
 
-For situations where less than the entire generator yield set is required, this will produce results faster than first converting the generator results into an array while 
-also allowing the developer to use the expressive nature of functional oriented array methods in place of `.next()` of `for(let item of <generator>)` code.
+For situations where less than the entire generator yield collection is required, generx can (but won't always) produce results faster than first converting the generator results into an array while 
+also allowing the developer to use the expressive nature of functional oriented array methods in place of `.next()` or `for(let item of <generator>)` code.
 
 # Installation
 
@@ -34,7 +34,7 @@ example2 = generx(example2);
 const await result = example2().reduce((accum,item) => accum += item); // result = 15
 ```
 
-You can even pass in an asynchronous method to `reduce`, `foreach` and other functions accepting functions as arguments:
+You can even pass in an asynchronous method to `reduce`, `forEach` and other functions accepting functions as arguments:
 
 ```
 async function* example3() {
@@ -49,13 +49,58 @@ const await result = example3().reduce(async (accum,item) => accum += item); // 
 
 # API
 
-The below functions are currently supported:
+## Standard Array Methods
+
+The below methods are currently supported and behave the same way as their array counterparts:
 
 ```
-["every", "finalize", "find", "findIndex", "forEach", "includes", "indexOf", "lastIndexOf", "map", "reduce", "reverse", "slice", "sort", "some"]
+every, find, findIndex, forEach, includes, indexOf, lastIndexOf, map, reduce, reverse, slice, sort, some
 ```
+
+## Additional Methods
+
+There is an additional method `count()` which will return the current number of values that have been yielded.
+
+There is an additional method `finalize()` which will force resolution of the entire generator yield collection.
+
+## .length vs .count()
+
+The property `length` works almost just like that with an Array. Setting it will limit the number of values yielded to the length provided.
+However, it starts out with the value `Infinity` since it is theoretically possible for a generator to yield forever. It remains at `Infinity` until it
+becomes fixed to the current `count()` when the generator has no more values to yield, i.e. `.next()` returns a value of `{done:true,value:<some value>}`.
+
+## Array accessor notation
+
+`generx'd` generators can also be accessed using array notation, e.g.
+
+```
+function* example4() {
+	for(const item of [1,2,3,4,5]) {
+		yield item;
+	}
+}
+example4 = generx(example4);
+const result = example4()[2]; // result = 3
+```
+
+For `async` generators, the array values should be awaited to force Promise resolution. Until the Promise resolves, the value at an index will be a Promise.
+
+```
+async function* example5() {
+	for(const item of [1,2,3,4,5]) {
+		yield item;
+	}
+}
+const example5 = generx(example5),
+	values = example5(),
+	promise = values[0], // promise instanceof Promise
+	result = await values[1]; // result = 2
+```
+
 
 # Release History (reverse chronological order)
+
+2018-11-08 v0.0.3 Added `count()`. Enhanced documentation. Improved async Promise resolution
 
 2018-11-07 v0.0.2 Fixed reverse. It was throwing an error due to undefined function. Modified `map` and `slice` to return a `generx` enhanced 
 generator rather than array. This will produce results faster for mapped functions and for slices less than the full generator yield results.
@@ -69,7 +114,7 @@ MIT License
 Copyright (c) 2018 Simon Y. Blackwell, AnyWhichWay, LLC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
+of this software and associated documentation files (the Software), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
@@ -78,7 +123,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER

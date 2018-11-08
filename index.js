@@ -219,21 +219,33 @@ export function generx(f,recursed) {
 								return yielded[i];
 							}
 							let next = generator.next();
+							// Note: The apparent duplicate code below ensures generator looks ahead to see if it is done
 							while(length===Infinity && !next.done) {
 								let value = isasync ? next : next.value;
 								if(isasync) {
-									const j = yielded.length;
-									next.then(item => { 
-										if(item.done) {
-											length = yielded.length = Math.min(j,yielded.length);
-											delete target[j];
-											delete target[j+1];
-										} else {
-											target[j] = yielded[j] = item.value;
-										}
-										return item.value;
+									let j = yielded.length;
+									value = new Promise(resolve => {
+										resolve(next.then(item => {
+											// replace Promise with resolved value
+											if(item.done) {
+												// if last value if not undefined, add it
+												if(item.value!==undefined) {
+													target[j] = yielded[j] = item.value;
+													j++;
+												}
+												length = yielded.length = Math.min(j,yielded.length);
+												// delete evidence of the final Promise which resolved to done
+												delete target[j];
+												delete target[j+1];
+											} else {
+											  // do not try to omptize by moving this up, results can legitimately contain undefined
+												target[j] = yielded[j] = item.value;
+											}
+											return item.value;
+										}))
 									});
 								}
+								// save the value to result array, might be a promise
 								target[yielded.length] = yielded[yielded.length] = value;
 								if(i<yielded.length-1) {
 									return yielded[i];
@@ -242,27 +254,40 @@ export function generx(f,recursed) {
 								next = generator.next();
 								value = isasync ? next : next.value;
 								if(isasync) {
-									const k = yielded.length;
-									next.then(item => { 
-										if(item.done) {
-											length = yielded.length = Math.min(k,yielded.length);
-											delete target[k];
-											delete target[k+1];
-										} else {
-											target[k] = yielded[k] = item.value;
-										}
-										return item.value;
+									let k = yielded.length;
+									value = new Promise(resolve => {
+										resolve(next.then(item => {
+											// replace Promise with resolved value
+											if(item.done) {
+												// if last value if not undefined, add it
+												if(item.value!==undefined) {
+													target[k] = yielded[k] = item.value;
+													k++;
+												}
+												length = yielded.length = Math.min(k,yielded.length);
+												// delete evidence of the final Promise which resolved to done
+												delete target[k];
+												delete target[k+1];
+											} else {
+												target[k] = yielded[k] = item.value;
+											}
+											return item.value;
+										}))
 									});
 								} else {
 									if(next.done) {
+										if(value!==undefined) {
+											target[yielded.length] = yielded[yielded.length] = value;
+										}
 										length = yielded.length;
 									} else {
+										// do not try to omptize by moving this up, results can legitimately contain undefined
 										target[yielded.length] = yielded[yielded.length] = value;
 										next = generator.next();
 									}
 								}
 							}
-							length = yielded.length;
+							length = yielded.length; // change length from Infnity to actual length
 							return yielded[i];
 						}
 						const value = target[property];
@@ -273,9 +298,10 @@ export function generx(f,recursed) {
 					},
 					ownKeys(target) {
 						target.finalize();
-						return Object.keys(target).concat("length","proxy");
+						return Object.keys(target).concat("count","length","proxy");
 					}
 				});
+		Object.defineProperty(generator,"count",{value:() => yielded.length});
 		Object.defineProperty(generator,"length",{get() { return length; },set(value) { length = yielded.length = value; }});
 		Object.defineProperty(generator,"proxy",{value:proxy});
 		return proxy;
