@@ -1,3 +1,4 @@
+export {generx as default};
 
 const ASYNCPROTO = Object.getPrototypeOf(async function(){}),
 	ASYNCGENERATORPROTO = Object.getPrototypeOf(async function*() {}());
@@ -205,10 +206,16 @@ export function generx(f,recursed) {
 	
 	return new Proxy(f,{
 		apply(target,thisArg,argumentsList) {
-			let length = Infinity;
+			let length = Infinity,
+				count = 0;
 			const generator = target.call(thisArg,...argumentsList),
 				yielded = [],
 				proxy = new Proxy(generator,{
+					deleteProperty(target,property) {
+						delete target[property];
+						delete yielded[property];
+						return true;
+					},
 					get(target,property) {
 						if(typeof(property)==="symbol") {
 							return target[property];
@@ -216,6 +223,9 @@ export function generx(f,recursed) {
 						const i = parseInt(property);
 						if(i>=0) {
 							if(i<yielded.length-1) {
+								if(i>=count) {
+									count = i+1;
+								}
 								return yielded[i];
 							}
 							let next = generator.next();
@@ -229,6 +239,8 @@ export function generx(f,recursed) {
 											// replace Promise with resolved value
 											if(item.done) {
 												// if last value if not undefined, add it
+												// unfortunately, if the value was intended to be
+												// an undefined member of the array we will miss
 												if(item.value!==undefined) {
 													target[j] = yielded[j] = item.value;
 													j++;
@@ -248,6 +260,9 @@ export function generx(f,recursed) {
 								// save the value to result array, might be a promise
 								target[yielded.length] = yielded[yielded.length] = value;
 								if(i<yielded.length-1) {
+									if(i>=count) {
+										count = i+1;
+									}
 									return yielded[i];
 								}
 								// peek ahead so length gets set properly
@@ -260,6 +275,8 @@ export function generx(f,recursed) {
 											// replace Promise with resolved value
 											if(item.done) {
 												// if last value if not undefined, add it
+												// unfortunately, if the value was intended to be
+												// an undefined member of the array we will miss
 												if(item.value!==undefined) {
 													target[k] = yielded[k] = item.value;
 													k++;
@@ -287,21 +304,38 @@ export function generx(f,recursed) {
 									}
 								}
 							}
-							length = yielded.length; // change length from Infnity to actual length
+							length = yielded.length; // change length from Infinity to actual length
+							if(i>=count) {
+								count = i+1;
+							}
 							return yielded[i];
 						}
-						const value = target[property];
-						if(typeof(value)==="function") {
-							return value.bind(target);
-						}
-						return value;
+						return target[property];
 					},
 					ownKeys(target) {
 						target.finalize();
 						return Object.keys(target).concat("count","length","proxy");
-					}
+					},
+					set(target,property,value) {
+						const i = parseInt(property);
+						if(i>=0) {
+							// force resolution of values before the set point
+							for(let j=yielded.length;j<i && length===Infinity;j++) {
+								proxy[j];
+							}
+							yielded[i] = value;
+							if(i>=count) {
+								count = i+1;
+							}
+							if(i>=length) {
+								length = i+1;
+							}
+						}
+						target[property] = value;
+						return true;
+					},
 				});
-		Object.defineProperty(generator,"count",{value:() => yielded.length});
+		Object.defineProperty(generator,"count",{value:() => count});
 		Object.defineProperty(generator,"length",{get() { return length; },set(value) { length = yielded.length = value; }});
 		Object.defineProperty(generator,"proxy",{value:proxy});
 		return proxy;

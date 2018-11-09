@@ -1,4 +1,4 @@
-import {generx} from "../index.js";
+import generx from "../index.js";
 
 const testarray = [1,2,3,4,5,1];
 
@@ -28,6 +28,41 @@ describe("sync",function() {
 	it("array access",function(done) {
 			chai.expect(synchronous()[0]).equal(testarray[0]);
 			done();
+	});
+	it("count",function(done) {
+		const generator = synchronous();
+		generator[0];
+		chai.expect(generator.count()).equal(1);
+		done();
+	});
+	it("set",function(done) {
+		const generator = synchronous();
+		generator[2] = 3;
+		chai.expect(generator.count()).equal(3);
+		chai.expect(generator.length).equal(Infinity);
+		chai.expect(generator[2]).equal(3);
+		done();
+	});
+	it("set past generator limit",function(done) {
+		const generator = synchronous();
+		generator[10] = 3;
+		chai.expect(generator.count()).equal(11);
+		chai.expect(generator.length).equal(11);
+		chai.expect(generator[10]).equal(3);
+		done();
+	});
+	it("delete",function(done) {
+		const generator = synchronous();
+		delete generator[0];
+		chai.expect(generator.count()).equal(0);
+		done();
+	});
+	it("delete existing",function(done) {
+		const generator = synchronous();
+		generator[0];
+		delete generator[0];
+		chai.expect(generator.count()).equal(1);
+		done();
 	});
 	it("every",function(done) {
 		chai.expect(synchronous().every((item,i) => item===testarray[i])).equal(true);
@@ -114,6 +149,11 @@ describe("async",function() {
 		const generator = asynchronous();
 		await generator[0];
 		chai.expect(generator[0]).equal(testarray[0]);
+	});
+	it("count",async function() {
+		const generator = asynchronous();
+		await generator[0];
+		chai.expect(generator.count()).equal(1);
 	});
 	it("every",async function() {
 		chai.expect(await asynchronous().every((item,i) => item===testarray[i])).equal(true);

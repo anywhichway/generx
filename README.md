@@ -1,9 +1,11 @@
-# generx v0.0.3
+# generx v0.0.4
 
 JavaScript generators extended with forEach, map, reduce ... most standard Array methods.
 
 For situations where less than the entire generator yield collection is required, generx can (but won't always) produce results faster than first converting the generator results into an array while 
 also allowing the developer to use the expressive nature of functional oriented array methods in place of `.next()` or `for(let item of <generator>)` code.
+
+See the Medium article: [Next Generation JavaScript Generators](https://medium.com/me/stats/post/df08312fa62d).
 
 # Installation
 
@@ -69,7 +71,7 @@ The property `length` works almost just like that with an Array. Setting it will
 However, it starts out with the value `Infinity` since it is theoretically possible for a generator to yield forever. It remains at `Infinity` until it
 becomes fixed to the current `count()` when the generator has no more values to yield, i.e. `.next()` returns a value of `{done:true,value:<some value>}`.
 
-## Array accessor notation
+## Array Accessor Notation
 
 `generx'd` generators can also be accessed using array notation, e.g.
 
@@ -97,8 +99,35 @@ const example5 = generx(example5),
 	result = await values[1]; // result = 2
 ```
 
+### Setting Values
+
+It is possible to set values at any index:
+
+```
+function* example6() {
+	for(const item of [1,2,3,4,5]) {
+		yield item;
+	}
+}
+const example6 = generx(example6),
+	values = example6();
+values[1] = 0;
+const result = values[1]; // result = 0
+```
+
+If the array index in greater than the current `.count()` and the generator is asynchronous, the intermediate values will be forced to start resolution.
+
+If the array index is beyond the total yield count, the length will be extended and the values at intermediate indexes will be undefined.
+
+### Deleting Values
+
+Deleting values at indexes works just like an array. Deleting a value at an index beyond the current `.count()` has no effect. Deleting a value at an index below the current
+`.count()` will set the value at the index to `undefined`.
+
 
 # Release History (reverse chronological order)
+
+2018-11-09 v0.0.4 Added unit tests for `count()`. Added support for delete and set on array indexes. Enhanced documentation.
 
 2018-11-08 v0.0.3 Added `count()`. Enhanced documentation. Improved async Promise resolution
 
