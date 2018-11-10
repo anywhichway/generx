@@ -1,4 +1,4 @@
-# generx v0.0.4
+# generx v0.0.5
 
 JavaScript generators extended with forEach, map, reduce ... most standard Array methods.
 
@@ -56,20 +56,26 @@ const await result = example3().reduce(async (accum,item) => accum += item); // 
 The below methods are currently supported and behave the same way as their array counterparts:
 
 ```
-every, find, findIndex, forEach, includes, indexOf, lastIndexOf, map, reduce, reverse, slice, sort, some
+every, fill, find, findIndex, forEach, includes, indexOf, join, lastIndexOf, map, pop, push, reduce, reverse, shift, slice, sort, some, unshift
 ```
 
-## Additional Methods
+## Additional Properties and Methods
 
-There is an additional method `count()` which will return the current number of values that have been yielded.
+There is an additional read-only property `realized` which contains an array copy of the realized values. Accessing it causes a slice operation. If you just need the
+length use `count()` below.
 
-There is an additional method `finalize()` which will force resolution of the entire generator yield collection.
+There is an additional method `count()` which will return the current number of realized values.
+
+There is an additional method `realize()` which will force resolution of the entire generator yield collection.
 
 ## .length vs .count()
 
+`.count()` return the minimum of the number of values yielded and the `.length`. The count may be less than the number of values yielded if `.pop()` or `.shift()`
+have been called. 
+
 The property `length` works almost just like that with an Array. Setting it will limit the number of values yielded to the length provided.
 However, it starts out with the value `Infinity` since it is theoretically possible for a generator to yield forever. It remains at `Infinity` until it
-becomes fixed to the current `count()` when the generator has no more values to yield, i.e. `.next()` returns a value of `{done:true,value:<some value>}`.
+becomes set to the current `count()` when the generator has no more values to yield, i.e. `.next()` returns a value of `{done:true,value:<some value>}`.
 
 ## Array Accessor Notation
 
@@ -126,6 +132,9 @@ Deleting values at indexes works just like an array. Deleting a value at an inde
 
 
 # Release History (reverse chronological order)
+
+2018-11-10 v0.0.5 Renamed `.finalize()` to `.realize()`. Changed return value to the array of all values. Added `.fill(value,start,end)`, `.join(separator)`, 
+`.pop()`, `.push(value)`, `.realized`.
 
 2018-11-09 v0.0.4 Added unit tests for `count()`. Added support for delete and set on array indexes. Enhanced documentation.
 

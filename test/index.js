@@ -22,7 +22,7 @@ describe("sync",function() {
 		done();
 	});
 	it("final length",function(done) {
-		chai.expect(synchronous().finalize()).equal(testarray.length);
+		chai.expect(synchronous().realize().length).equal(testarray.length);
 		done();
 	});
 	it("array access",function(done) {
@@ -68,6 +68,21 @@ describe("sync",function() {
 		chai.expect(synchronous().every((item,i) => item===testarray[i])).equal(true);
 		done();
 	});
+	it("fill",function(done) {
+		const generator = synchronous().fill(0,0,7);
+		chai.expect(generator.length).equal(7);
+		for(let i=0;i<7;i++) {
+			chai.expect(generator[i]).equal(0);
+		}
+		done();
+	});
+	it("fill no end",function(done) {
+		const generator = synchronous().fill(0,0);
+		for(let i=0;i<generator.length;i++) {
+			chai.expect(generator[i]).equal(0);
+		}
+		done();
+	});
 	it("find",function(done) {
 		chai.expect(synchronous().find(item => item===1)).equal(testarray.find(item => item===1));
 		done();
@@ -91,6 +106,10 @@ describe("sync",function() {
 		chai.expect(synchronous().indexOf(1)).equal(0);
 		done();
 	});
+	it("join",function(done) {
+		chai.expect(synchronous().join(";")).equal(testarray.join(";"));
+		done();
+	});
 	it("keys",function(done) {
 		chai.expect(Object.keys(synchronous()).length).equal(Object.keys(testarray).length);
 		done();
@@ -105,16 +124,37 @@ describe("sync",function() {
 		chai.expect(a1.every((item,i) => item===a2[i])).equal(true);
 		done();
 	});
+	it("pop",function(done) {
+		const generator = synchronous();
+		chai.expect(generator.pop()).equal(testarray[testarray.length-1]);
+		chai.expect(generator.length).equal(testarray.length-1);
+		chai.expect(generator[testarray.length-1]).equal(undefined);
+		done();
+	});
+	it("push",function(done) {
+		const generator = synchronous();
+		chai.expect(generator.push(6)).equal(testarray.length+1);
+		chai.expect(generator[testarray.length]).equal(6);
+		done();
+	});
 	it("reduce",function(done) {
 		const r1 = testarray.reduce((accum,i) => i,0),
 			r2 = synchronous().reduce((accum,i) => i,0);
 		chai.expect(r1).equal(r2);
 		done();
 	});
-	it("reverse",function() {
+	it("reverse",function(done) {
 		const a1 = testarray.reverse(),
 			a2 = synchronous().reverse();
 		chai.expect(a1.every((item,i) => item===a2[i])).equal(true);
+		done();
+	});
+	it("shift",function(done) {
+		const a1 = testarray.slice(),
+			a2 = synchronous();
+		chai.expect(a2.shift()).equal(a1.shift());
+		chai.expect(a2.count()).equal(0);
+		done();
 	});
 	it("slice part",function(done) {
 		const a1 = testarray.slice(1,2),
@@ -136,6 +176,12 @@ describe("sync",function() {
 		chai.expect(a1.every((item,i) => item===a3[i])).equal(true);
 		done();
 	});
+	it("unshift",function(done) {
+		const generator = synchronous();
+		chai.expect(generator.unshift(6)).equal(1);
+		chai.expect(generator[0]).equal(6);
+		done();
+	});
 });
 
 describe("async",function() {
@@ -143,7 +189,8 @@ describe("async",function() {
 		chai.expect(await asynchronous().length).equal(Infinity);
 	});
 	it("final length",async function() {
-		chai.expect(await asynchronous().finalize()).equal(testarray.length);
+		const array = await asynchronous().realize();
+		chai.expect(array.length).equal(testarray.length);
 	});
 	it("array access",async function() {
 		const generator = asynchronous();
@@ -157,6 +204,19 @@ describe("async",function() {
 	});
 	it("every",async function() {
 		chai.expect(await asynchronous().every((item,i) => item===testarray[i])).equal(true);
+	});
+	it("fill",async function() {
+		const generator = await asynchronous().fill(0,0,7);
+		chai.expect(generator.length).equal(7);
+		for(let i=0;i<7;i++) {
+			chai.expect(generator[i]).equal(0);
+		}
+	});
+	it("fill no end",async function() {
+		const generator = await asynchronous().fill(0,0);
+		for(let i=0;i<generator.length;i++) {
+			chai.expect(generator[i]).equal(0);
+		}
 	});
 	it("find",async function() {
 		chai.expect(await asynchronous().find(item => item===1)).equal(testarray.find(item => item===1));
@@ -176,6 +236,9 @@ describe("async",function() {
 	it("indexOf",async function() {
 		chai.expect(await asynchronous().indexOf(1)).equal(0);
 	});
+	it("join",async function() {
+		chai.expect(await asynchronous().join(";")).equal(testarray.join(";"));
+	});
 	it("lastIndexOf",async function() {
 		chai.expect(await asynchronous().lastIndexOf(1)).equal(testarray.lastIndexOf(1));
 	});
@@ -183,6 +246,17 @@ describe("async",function() {
 		const a1 = testarray.map(i => i),
 			a2 = await asynchronous().map(i => i);
 		chai.expect(a1.every(async (item,i) => item===await a2[i])).equal(true);
+	});
+	it("pop",async function() {
+		const generator = asynchronous();
+		chai.expect(await generator.pop()).equal(testarray[testarray.length-1]);
+		chai.expect(generator.length).equal(testarray.length-1);
+		chai.expect(generator[testarray.length-1]).equal(undefined);
+	});
+	it("push",async function() {
+		const generator = asynchronous();
+		chai.expect(await generator.push(6)).equal(testarray.length+1);
+		chai.expect(generator[testarray.length]).equal(6);
 	});
 	it("reduce",async function() {
 		const r1 = testarray.reduce((accum,i) => accum += i,0),
@@ -193,6 +267,12 @@ describe("async",function() {
 		const a1 = testarray.reverse(),
 			a2 = await asynchronous().reverse();
 		chai.expect(a1.every(async (item,i) => item===await a2[i])).equal(true);
+	});
+	it("shift",async function() {
+		const a1 = testarray.slice(),
+			a2 = synchronous();
+		chai.expect(await a2.shift()).equal(a1.shift());
+		chai.expect(a2.count()).equal(0);
 	});
 	it("slice part",async function() {
 		const a1 = testarray.slice(1,2),
@@ -210,6 +290,11 @@ describe("async",function() {
 			a2 = await gen.slice(0,1),
 			a3 = await gen.slice(1,3);
 		chai.expect(a1.every(async (item,i) => item===await a3[i])).equal(true);
+	});
+	it("unshift",async function() {
+		const generator = asynchronous();
+		chai.expect(await generator.unshift(6)).equal(1);
+		chai.expect(generator[0]).equal(6);
 	});
 });
 

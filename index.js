@@ -14,11 +14,16 @@ export function generx(f,recursed) {
 			}
 			return true;
 		}
-		proto.finalize = async function() {
-			for(let i=0;await this.proxy[i] && i<this.length;i++) {
-				;
+		proto.fill = async function(value,start=0,end) {
+			const etype = typeof(end);
+			if(etype==="number") {
+				await this.proxy[end];
 			}
-			return this.length;
+			for(let i=start;(etype==="number" ? i<end : i<this.length);i++) {
+				etype==="number" || await this.proxy[i];
+				this.proxy[i] = value;
+			}
+			return this;
 		}
 		proto.find = async function(f) {
 			for(let i=0;await this.proxy[i] && i<this.length;i++) {
@@ -51,6 +56,13 @@ export function generx(f,recursed) {
 			}
 			return -1;
 		}
+		proto.join = async function(separator=",") {
+			let str = "";
+			for(let i=0;await this.proxy[i] && i<this.length;i++) {
+				str += (i===0 ? "" : separator) + this[i];
+			}
+			return str;
+		}
 		proto.lastIndexOf = async function(value) {
 			let last = -1;
 			for(let i=0;await this.proxy[i] && i<this.length;i++) {
@@ -66,6 +78,27 @@ export function generx(f,recursed) {
 			}
 		}
 		if(!recursed) proto.map = generx(proto.map,true);
+		proto.pop = async function() {
+			let result;
+			if(this.length===Infinity) {
+				for(let i=this.count();await this.proxy[i] && i<this.length;i++) {
+					;
+				}
+			}
+			result = this[this.length-1];
+			this.length--;
+			return result;
+		}
+		proto.push = async function(value) {
+			let result;
+			if(this.length===Infinity) {
+				for(let i=this.count();await this.proxy[i] && i<this.length;i++) {
+					;
+				}
+			}
+			this[this.length] = value;
+			return this.length;
+		}
 		proto.reduce = async function(f,accum) {
 			let initialized = accum!==undefined;
 			for(let i=0;await this.proxy[i] && i<this.length;i++) {
@@ -89,6 +122,15 @@ export function generx(f,recursed) {
 				}
 			})();
 		}
+		proto.shift = async function() {
+			const result = await this.proxy[0],
+				count = await this.count();
+			for(let i=0;i<count;i++) {
+				this.proxy[i] = await this.proxy[i+1];
+			}
+			this.length = count - 1;
+			return result;
+		}
 		proto.slice = async function*(start=0,end=Infinity) {
 			for(let i=start,j=0;i<end && await this.proxy[i] && i<this.length;i++,j++) {
 					yield this[i];
@@ -104,6 +146,22 @@ export function generx(f,recursed) {
 				if(await f(this[i],i,this)) return true;
 			}
 		}
+		proto.realize = async function() {
+			if(this.length===Infinity) {
+				for(let i=await this.count();await this.proxy[i] && i<this.length;i++) {
+					;
+				}
+			}
+			return this.realized;
+		}
+		proto.unshift = function(value) {
+			const values = this.realized;
+			this.proxy[0] = value;
+			for(let i=0;i<values.length;i++) {
+				this.proxy[i+1] = values[i];
+			}
+			return this.count();
+		}
 	} else {
 		proto.every = function(f) {
 			for(let i=0;i<this.length;i++) {
@@ -111,11 +169,16 @@ export function generx(f,recursed) {
 			}
 			return true;
 		}
-		proto.finalize = function() {
-			for(let i=0;i<this.length;i++) {
-				this.proxy[i];
+		proto.fill = function(value,start=0,end) {
+			const etype = typeof(end);
+			if(etype==="number") {
+				this.proxy[end];
 			}
-			return this.length;
+			for(let i=start;(etype==="number" ? i<end : i<this.length);i++) {
+				etype==="number" || this.proxy[i];
+				this.proxy[i] = value;
+			}
+			return this;
 		}
 		proto.find = function(f) {
 			for(let i=0;i<this.length;i++) {
@@ -149,6 +212,13 @@ export function generx(f,recursed) {
 			}
 			return -1;
 		}
+		proto.join = function(separator=",") {
+			let str = "";
+			for(let i=0;i<this.length;i++) {
+				str += (i===0 ? "" : separator) + this.proxy[i];
+			}
+			return str;
+		}
 		proto.lastIndexOf = function(value) {
 			let last = -1;
 			for(let i=0;i<this.length;i++) {
@@ -164,6 +234,36 @@ export function generx(f,recursed) {
 			}
 		}
 		if(!recursed) proto.map = generx(proto.map,true);
+		proto.pop = function() {
+			let result;
+			if(this.length===Infinity) {
+				for(let i=this.count();i<this.length;i++) {
+					this.proxy[i];
+				}
+			}
+			result = this[this.length-1];
+			this.length--;
+			return result;
+		}
+		proto.push = function(value) {
+			let result;
+			if(this.length===Infinity) {
+				for(let i=this.count();i<this.length;i++) {
+					this.proxy[i];
+				}
+			}
+			this[this.length] = value;
+			return this.length;
+		}
+		proto.shift = function() {
+			const result = this.proxy[0],
+				count = this.count();
+			for(let i=0;i<count;i++) {
+				this.proxy[i] = this.proxy[i+1];
+			}
+			this.length = count - 1;
+			return result;
+		}
 		proto.reduce = function(f,accum) {
 			let initialized = accum!==undefined;
 			for(let i=0;i<this.length;i++) {
@@ -202,6 +302,22 @@ export function generx(f,recursed) {
 				if(f(this.proxy[i],i,this)) return true;
 			}
 		}
+		proto.realize = function() {
+			if(this.length===Infinity) {
+				for(let i=this.count();i<this.length;i++) {
+					this.proxy[i];
+				}
+			}
+			return this.realized;
+		}
+		proto.unshift = function(value) {
+			const values = this.realized;
+			this.proxy[0] = value;
+			for(let i=0;i<values.length;i++) {
+				this.proxy[i+1] = values[i];
+			}
+			return this.count();
+		}
 	}
 	
 	return new Proxy(f,{
@@ -209,11 +325,11 @@ export function generx(f,recursed) {
 			let length = Infinity,
 				count = 0;
 			const generator = target.call(thisArg,...argumentsList),
-				yielded = [],
+				realized = [],
 				proxy = new Proxy(generator,{
 					deleteProperty(target,property) {
 						delete target[property];
-						delete yielded[property];
+						delete realized[property];
 						return true;
 					},
 					get(target,property) {
@@ -222,19 +338,19 @@ export function generx(f,recursed) {
 						}
 						const i = parseInt(property);
 						if(i>=0) {
-							if(i<yielded.length-1) {
+							if(i<realized.length-1) {
 								if(i>=count) {
 									count = i+1;
 								}
-								return yielded[i];
+								return realized[i];
 							}
 							let next = generator.next();
 							// Note: The apparent duplicate code below ensures generator looks ahead to see if it is done
 							while(length===Infinity && !next.done) {
 								let value = isasync ? next : next.value;
 								if(isasync) {
-									let j = yielded.length;
 									value = new Promise(resolve => {
+										let j = realized.length;
 										resolve(next.then(item => {
 											// replace Promise with resolved value
 											if(item.done) {
@@ -242,35 +358,35 @@ export function generx(f,recursed) {
 												// unfortunately, if the value was intended to be
 												// an undefined member of the array we will miss
 												if(item.value!==undefined) {
-													target[j] = yielded[j] = item.value;
+													target[j] = realized[j] = item.value;
 													j++;
 												}
-												length = yielded.length = Math.min(j,yielded.length);
+												length = realized.length = Math.min(j,realized.length);
 												// delete evidence of the final Promise which resolved to done
 												delete target[j];
 												delete target[j+1];
 											} else {
 											  // do not try to omptize by moving this up, results can legitimately contain undefined
-												target[j] = yielded[j] = item.value;
+												target[j] = realized[j] = item.value;
 											}
 											return item.value;
 										}))
 									});
 								}
 								// save the value to result array, might be a promise
-								target[yielded.length] = yielded[yielded.length] = value;
-								if(i<yielded.length-1) {
+								target[realized.length] = realized[realized.length] = value;
+								if(i<realized.length-1) {
 									if(i>=count) {
 										count = i+1;
 									}
-									return yielded[i];
+									return realized[i];
 								}
 								// peek ahead so length gets set properly
 								next = generator.next();
 								value = isasync ? next : next.value;
 								if(isasync) {
-									let k = yielded.length;
 									value = new Promise(resolve => {
+										let k = realized.length;
 										resolve(next.then(item => {
 											// replace Promise with resolved value
 											if(item.done) {
@@ -278,15 +394,15 @@ export function generx(f,recursed) {
 												// unfortunately, if the value was intended to be
 												// an undefined member of the array we will miss
 												if(item.value!==undefined) {
-													target[k] = yielded[k] = item.value;
+													target[k] = realized[k] = item.value;
 													k++;
 												}
-												length = yielded.length = Math.min(k,yielded.length);
+												length = realized.length = Math.min(k,realized.length);
 												// delete evidence of the final Promise which resolved to done
 												delete target[k];
 												delete target[k+1];
 											} else {
-												target[k] = yielded[k] = item.value;
+												target[k] = realized[k] = item.value;
 											}
 											return item.value;
 										}))
@@ -294,41 +410,41 @@ export function generx(f,recursed) {
 								} else {
 									if(next.done) {
 										if(value!==undefined) {
-											target[yielded.length] = yielded[yielded.length] = value;
+											target[realized.length] = realized[realized.length] = value;
 										}
-										length = yielded.length;
+										length = realized.length;
 									} else {
 										// do not try to omptize by moving this up, results can legitimately contain undefined
-										target[yielded.length] = yielded[yielded.length] = value;
+										target[realized.length] = realized[realized.length] = value;
 										next = generator.next();
 									}
 								}
 							}
-							length = yielded.length; // change length from Infinity to actual length
+							length = realized.length; // change length from Infinity to actual length
 							if(i>=count) {
 								count = i+1;
 							}
-							return yielded[i];
+							return realized[i];
 						}
 						return target[property];
 					},
 					ownKeys(target) {
-						target.finalize();
-						return Object.keys(target).concat("count","length","proxy");
+						target.realize();
+						return Object.keys(target).concat("count","length","proxy","realized");
 					},
 					set(target,property,value) {
 						const i = parseInt(property);
 						if(i>=0) {
 							// force resolution of values before the set point
-							for(let j=yielded.length;j<i && length===Infinity;j++) {
+							for(let j=realized.length;j<i && length===Infinity;j++) {
 								proxy[j];
 							}
-							yielded[i] = value;
+							realized[i] = value;
 							if(i>=count) {
-								count = i+1;
+								count = i + 1;
 							}
 							if(i>=length) {
-								length = i+1;
+								length = i + 1;
 							}
 						}
 						target[property] = value;
@@ -336,8 +452,19 @@ export function generx(f,recursed) {
 					},
 				});
 		Object.defineProperty(generator,"count",{value:() => count});
-		Object.defineProperty(generator,"length",{get() { return length; },set(value) { length = yielded.length = value; }});
+		Object.defineProperty(generator,"length",{
+			get() { 
+				return length; 
+			},
+			set(value) { 
+				if(value<Infinity) { 
+					length = realized.length = value;
+				}
+				count = Math.min(count,realized.length); 
+			}
+		});
 		Object.defineProperty(generator,"proxy",{value:proxy});
+		Object.defineProperty(generator,"realized",{get() { return realized.slice(); },set() { throw new Error("'realized' is read-only");}});
 		return proxy;
 		}
 	});
