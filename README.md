@@ -1,4 +1,4 @@
-# generx v0.0.5
+# generx v0.0.6
 
 JavaScript generators extended with forEach, map, reduce ... most standard Array methods.
 
@@ -53,11 +53,34 @@ const await result = example3().reduce(async (accum,item) => accum += item); // 
 
 ## Standard Array Methods
 
-The below methods are currently supported and behave the same way as their array counterparts:
+The below methods are currently supported and behave the same way as their array counterparts. Those marked with a + resolve
+only those elements required to satisfy their semantics and will keep memory, network, and CPU utilization down:
 
 ```
-every, fill, find, findIndex, forEach, includes, indexOf, join, lastIndexOf, map, pop, push, reduce, reverse, shift, slice, sort, some, unshift
++every,
++fill,
++find,
++findIndex,
+forEach,
++includes,
++indexOf,
+join,
+lastIndexOf,
+map,
+pop,
+push,
+reduce,
+reverse,
++shift,
++slice,
+sort,
++some,
++unshift
 ```
+
+The standard array looping approach `for(let i=0;i < generator.length;i++) { ... }` will also work and you can break early.
+
+If you are using an asynchronous generator, then use `for(let i=0; i < generator.length;i++) { const value = await generator[i]; ... }`
 
 ## Additional Properties and Methods
 
@@ -132,6 +155,8 @@ Deleting values at indexes works just like an array. Deleting a value at an inde
 
 
 # Release History (reverse chronological order)
+
+2018-11-10 v0.0.6 Enhanced documentation. 
 
 2018-11-10 v0.0.5 Renamed `.finalize()` to `.realize()`. Changed return value to the array of all values. Added `.fill(value,start,end)`, `.join(separator)`, 
 `.pop()`, `.push(value)`, `.realized`.

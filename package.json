@@ -1,6 +1,6 @@
 {
 	"name": "generx",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "JavaScript generators extended with forEach, map, reduce ... most standard Array methods.",
 	"private": false,
 	"isomorphic": true,
