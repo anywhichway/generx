@@ -111,7 +111,7 @@ describe("sync",function() {
 		done();
 	});
 	it("keys",function(done) {
-		chai.expect(Object.keys(synchronous()).length).equal(Object.keys(testarray).length);
+		chai.expect(Object.keys(synchronous()).length).equal(Object.keys(testarray).length+1); // for "reset"
 		done();
 	});
 	it("lastIndexOf",function(done) {
@@ -362,6 +362,22 @@ describe("examples",function() {
 		}
 		example6 = generx(example6);
 		const values = example6();
+		for(let i=0;await values[i] && i<values.length;i++) {
+			chai.expect(values[i]).equal(i+1);
+		}
+	});
+	it("example7",async function() {
+		async function* example7() {
+			for(const item of [1,2,3,4,5]) {
+				yield item;
+			}
+		}
+		example7 = generx(example7);
+		const values = example7();
+		for(let i=0;await values[i] && i<values.length;i++) {
+			chai.expect(values[i]).equal(i+1);
+		}
+		values.reset();
 		for(let i=0;await values[i] && i<values.length;i++) {
 			chai.expect(values[i]).equal(i+1);
 		}

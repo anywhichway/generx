@@ -1,6 +1,6 @@
-# generx v0.0.6
+# generx v0.0.7
 
-JavaScript generators extended with forEach, map, reduce ... most standard Array methods.
+JavaScript generators extended with forEach, map, reduce ... most standard Array methods, plus the abiliyt to reset and re-use the generator.
 
 For situations where less than the entire generator yield collection is required, generx can (but won't always) produce results faster than first converting the generator results into an array while 
 also allowing the developer to use the expressive nature of functional oriented array methods in place of `.next()` or `for(let item of <generator>)` code.
@@ -100,6 +100,10 @@ The property `length` works almost just like that with an Array. Setting it will
 However, it starts out with the value `Infinity` since it is theoretically possible for a generator to yield forever. It remains at `Infinity` until it
 becomes set to the current `count()` when the generator has no more values to yield, i.e. `.next()` returns a value of `{done:true,value:<some value>}`.
 
+## reset()
+
+Calling reset() will allow a generator to be re-used.
+
 ## Array Accessor Notation
 
 `generx'd` generators can also be accessed using array notation, e.g.
@@ -155,6 +159,8 @@ Deleting values at indexes works just like an array. Deleting a value at an inde
 
 
 # Release History (reverse chronological order)
+
+2018-12-31 v0.0.7 Added `reset()`.
 
 2018-11-10 v0.0.6 Enhanced documentation. 
 
