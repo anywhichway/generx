@@ -143,6 +143,15 @@ describe("sync",function() {
 		chai.expect(r1).equal(r2);
 		done();
 	});
+	it("reset",function(done) {
+		const a1 = testarray,
+			  g2 = synchronous();
+		let a2 = [...g2];
+		g2.reset();
+		a2 = [...g2];
+		chai.expect(a1).eql(a2);
+		done();
+	});
 	it("reverse",function(done) {
 		const a1 = testarray.reverse(),
 			a2 = synchronous().reverse();
@@ -262,6 +271,17 @@ describe("async",function() {
 		const r1 = testarray.reduce((accum,i) => accum += i,0),
 			r2 = await asynchronous().reduce((accum,i) => accum += i,0);
 		chai.expect(r1).equal(r2);
+	});
+	it("reset",async function() {
+		const a1 = testarray,
+			  g2 = asynchronous();
+		let a2 = [];
+		for await (let a of g2) {}
+		g2.reset();
+		for await (let a of g2) {
+			a2.push(a);
+		}
+		chai.expect(a1).eql(a2);
 	});
 	it("reverse",async function() {
 		const a1 = testarray.reverse(),

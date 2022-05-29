@@ -319,20 +319,21 @@ export function generx(f,recursed) {
 			return this.count();
 		}
 	}
+
+	function makeGenerator(target, thisArg, argumentsList) {
+		const generator = target.apply(thisArg, argumentsList),
+			  next = generator.next.bind(generator);
+		return { generator, next };
+	}
 	
 	return new Proxy(f,{
 		apply(target,thisArg,argumentsList) {
 			let length = Infinity,
-				count = 0;
-			const base = target.call(thisArg,...argumentsList),
-				basenext = base.next;
-      let generator = base,
-      	realized = [];
-      base.next = function next() {
-       return generator===base
-         ? basenext.call(base) // generator is the original one
-         : generator.next(); // generator is the reset one
-      }
+				count = 0,
+				realized = [],
+				{ generator, next } = makeGenerator(...arguments);
+			// bounce to `next`, which can be overwritten to replace the current generator
+			generator.next = (value) => next(value);
       // define reset to use the original arguments to create
       // a new generator and assign it to the generator variable
       Object.defineProperty(generator,"reset",{
@@ -340,10 +341,11 @@ export function generx(f,recursed) {
         value: () => 
           {
           	realized = [];
-          	return generator =  target.call(thisArg,...argumentsList)
+			({ generator, next } =  makeGenerator(...arguments));
+			return generator;
           }
       });
-			const proxy = new Proxy(base,{
+			const proxy = new Proxy(generator,{
 					deleteProperty(target,property) {
 						delete target[property];
 						delete realized[property];
