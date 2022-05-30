@@ -340,6 +340,7 @@ export function generx(f,recursed) {
         enumerable:false,
         value: () => 
           {
+			length = Infinity;
           	realized = [];
 			({ generator, next } =  makeGenerator(...arguments));
 			return generator;
