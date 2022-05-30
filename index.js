@@ -333,7 +333,10 @@ export function generx(f,recursed) {
 				realized = [],
 				{ generator, next } = makeGenerator(...arguments);
 			// bounce to `next`, which can be overwritten to replace the current generator
-			generator.next = (value) => next(value);
+			Object.defineProperty(generator,"next", {
+				enumerable:false,
+				value: (value) => next(value),
+			});
       // define reset to use the original arguments to create
       // a new generator and assign it to the generator variable
       Object.defineProperty(generator,"reset",{
@@ -450,7 +453,7 @@ export function generx(f,recursed) {
 					},
 					ownKeys(target) {
 						target.realize();
-						return Object.keys(target).concat("count","length","proxy","realized","reset");
+						return Object.keys(target).concat("count","length","next","proxy","realized","reset");
 					},
 					set(target,property,value) {
 						const i = parseInt(property);

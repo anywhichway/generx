@@ -111,7 +111,7 @@ describe("sync",function() {
 		done();
 	});
 	it("keys",function(done) {
-		chai.expect(Object.keys(synchronous()).length).equal(Object.keys(testarray).length+1); // for "reset"
+		chai.expect(Object.keys(synchronous())).eql(Object.keys(testarray));
 		done();
 	});
 	it("lastIndexOf",function(done) {
