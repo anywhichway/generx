@@ -337,18 +337,17 @@ export function generx(f,recursed) {
 				enumerable:false,
 				value: (value) => next(value),
 			});
-      // define reset to use the original arguments to create
-      // a new generator and assign it to the generator variable
-      Object.defineProperty(generator,"reset",{
-        enumerable:false,
-        value: () => 
-          {
-			length = Infinity;
-          	realized = [];
-			({ generator, next } =  makeGenerator(...arguments));
-			return generator;
-          }
-      });
+			// define reset to use the original arguments to create
+			// a new generator and assign it to the generator variable
+			Object.defineProperty(generator,"reset",{
+				enumerable:false,
+				value: () => {
+					length = Infinity;
+					realized = [];
+					({ generator, next } = makeGenerator(...arguments));
+					return generator;
+				},
+			});
 			const proxy = new Proxy(generator,{
 					deleteProperty(target,property) {
 						delete target[property];
@@ -389,7 +388,7 @@ export function generx(f,recursed) {
 												delete target[j];
 												delete target[j+1];
 											} else {
-											  // do not try to omptize by moving this up, results can legitimately contain undefined
+											  // do not try to optimize by moving this up, results can legitimately contain undefined
 												target[j] = realized[j] = item.value;
 											}
 											return item.value;
@@ -437,7 +436,7 @@ export function generx(f,recursed) {
 										}
 										length = realized.length;
 									} else {
-										// do not try to omptize by moving this up, results can legitimately contain undefined
+										// do not try to optimize by moving this up, results can legitimately contain undefined
 										target[realized.length] = realized[realized.length] = value;
 										next = generator.next();
 									}
@@ -489,6 +488,6 @@ export function generx(f,recursed) {
 		Object.defineProperty(generator,"proxy",{value:proxy});
 		Object.defineProperty(generator,"realized",{get() { return realized.slice(); },set() { throw new Error("'realized' is read-only");}});
 		return proxy;
-		}
+		},
 	});
 }
