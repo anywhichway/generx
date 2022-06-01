@@ -331,6 +331,35 @@ export function generx(f,recursed) {
 		count: 0,
 		length: Infinity,
 	};
+
+	/**
+	 * Replaces a stored promise from an asynchronous generator with the resolved value.
+	 */
+	function realizeLater(target, state, next) {
+		return new Promise(resolve => {
+			let j = state.realized.length;
+			resolve(next.then(item => {
+				// replace Promise with resolved value
+				if(item.done) {
+					// if last value if not undefined, add it
+					// unfortunately, if the value was intended to be
+					// an undefined member of the array we will miss
+					if(item.value!==undefined) {
+						target[j] = state.realized[j] = item.value;
+						j++;
+					}
+					state.length = state.realized.length = Math.min(j, state.realized.length);
+					// delete evidence of the final Promise which resolved to done
+					delete target[j];
+					delete target[j+1];
+				} else {
+					// do not try to optimize by moving this up, results can legitimately contain undefined
+					target[j] = state.realized[j] = item.value;
+				}
+				return item.value;
+			}))
+		});
+	}
 	
 	return new Proxy(f,{
 		apply(target,thisArg,argumentsList) {
@@ -372,29 +401,7 @@ export function generx(f,recursed) {
 							while(state.length===Infinity && !next.done) {
 								let value = isasync ? next : next.value;
 								if(isasync) {
-									value = new Promise(resolve => {
-										let j = state.realized.length;
-										resolve(next.then(item => {
-											// replace Promise with resolved value
-											if(item.done) {
-												// if last value if not undefined, add it
-												// unfortunately, if the value was intended to be
-												// an undefined member of the array we will miss
-												if(item.value!==undefined) {
-													target[j] = state.realized[j] = item.value;
-													j++;
-												}
-												state.length = state.realized.length = Math.min(j,state.realized.length);
-												// delete evidence of the final Promise which resolved to done
-												delete target[j];
-												delete target[j+1];
-											} else {
-											  // do not try to optimize by moving this up, results can legitimately contain undefined
-												target[j] = state.realized[j] = item.value;
-											}
-											return item.value;
-										}))
-									});
+									value = realizeLater(target, state, next);
 								}
 								// save the value to result array, might be a promise
 								target[state.realized.length] = state.realized[state.realized.length] = value;
@@ -408,28 +415,7 @@ export function generx(f,recursed) {
 								next = state.next();
 								value = isasync ? next : next.value;
 								if(isasync) {
-									value = new Promise(resolve => {
-										let k = state.realized.length;
-										resolve(next.then(item => {
-											// replace Promise with resolved value
-											if(item.done) {
-												// if last value if not undefined, add it
-												// unfortunately, if the value was intended to be
-												// an undefined member of the array we will miss
-												if(item.value!==undefined) {
-													target[k] = state.realized[k] = item.value;
-													k++;
-												}
-												state.length = state.realized.length = Math.min(k,state.realized.length);
-												// delete evidence of the final Promise which resolved to done
-												delete target[k];
-												delete target[k+1];
-											} else {
-												target[k] = state.realized[k] = item.value;
-											}
-											return item.value;
-										}))
-									});
+									value = realizeLater(target, state, next);
 								} else {
 									if(next.done) {
 										if(value!==undefined) {
