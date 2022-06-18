@@ -111,7 +111,7 @@ describe("sync",function() {
 		done();
 	});
 	it("keys",function(done) {
-		chai.expect(Object.keys(synchronous()).length).equal(Object.keys(testarray).length+1); // for "reset"
+		chai.expect(Object.keys(synchronous())).eql(Object.keys(testarray));
 		done();
 	});
 	it("lastIndexOf",function(done) {
@@ -141,6 +141,25 @@ describe("sync",function() {
 		const r1 = testarray.reduce((accum,i) => i,0),
 			r2 = synchronous().reduce((accum,i) => i,0);
 		chai.expect(r1).equal(r2);
+		done();
+	});
+	it("reset",function(done) {
+		const a1 = testarray,
+			  g2 = synchronous();
+		let a2 = [...g2];
+		g2.reset();
+		a2 = [...g2];
+		chai.expect(a1).eql(a2);
+		done();
+	});
+	it("reset should restore array access after spread & array access",function(done) {
+		const a1 = testarray,
+			  g1 = synchronous();
+		// realize the sequence, which consumes the values & sets length
+		[...g1];
+		g1[0];
+		g1.reset();
+		chai.expect(a1[0]).equal(g1[0]);
 		done();
 	});
 	it("reverse",function(done) {
@@ -262,6 +281,26 @@ describe("async",function() {
 		const r1 = testarray.reduce((accum,i) => accum += i,0),
 			r2 = await asynchronous().reduce((accum,i) => accum += i,0);
 		chai.expect(r1).equal(r2);
+	});
+	it("reset",async function() {
+		const a1 = testarray,
+			  g2 = asynchronous();
+		let a2 = [];
+		for await (let a of g2) {}
+		g2.reset();
+		for await (let a of g2) {
+			a2.push(a);
+		}
+		chai.expect(a1).eql(a2);
+	});
+	it("reset should restore array access after iteration & array access",async function() {
+		const a1 = testarray,
+			  g1 = asynchronous();
+		// go through the sequence
+		for await (let a of g1) {}
+		await g1[0];
+		await g1.reset();
+		chai.expect(a1[0]).equal(await g1[0]);
 	});
 	it("reverse",async function() {
 		const a1 = testarray.reverse(),

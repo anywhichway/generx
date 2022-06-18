@@ -319,31 +319,37 @@ export function generx(f,recursed) {
 			return this.count();
 		}
 	}
+
+	function makeGenerator(target, thisArg, argumentsList) {
+		const generator = target.apply(thisArg, argumentsList),
+			  next = generator.next.bind(generator);
+		return { generator, next };
+	}
 	
 	return new Proxy(f,{
 		apply(target,thisArg,argumentsList) {
 			let length = Infinity,
-				count = 0;
-			const base = target.call(thisArg,...argumentsList),
-				basenext = base.next;
-      let generator = base,
-      	realized = [];
-      base.next = function next() {
-       return generator===base
-         ? basenext.call(base) // generator is the original one
-         : generator.next(); // generator is the reset one
-      }
+				count = 0,
+				realized = [],
+				{ generator, next } = makeGenerator(...arguments);
+			// bounce to `next`, which can be overwritten to replace the current generator
+			Object.defineProperty(generator,"next", {
+				enumerable:false,
+				value: (value) => next(value),
+			});
       // define reset to use the original arguments to create
       // a new generator and assign it to the generator variable
       Object.defineProperty(generator,"reset",{
         enumerable:false,
         value: () => 
           {
+			length = Infinity;
           	realized = [];
-          	return generator =  target.call(thisArg,...argumentsList)
+			({ generator, next } =  makeGenerator(...arguments));
+			return generator;
           }
       });
-			const proxy = new Proxy(base,{
+			const proxy = new Proxy(generator,{
 					deleteProperty(target,property) {
 						delete target[property];
 						delete realized[property];
@@ -447,7 +453,7 @@ export function generx(f,recursed) {
 					},
 					ownKeys(target) {
 						target.realize();
-						return Object.keys(target).concat("count","length","proxy","realized","reset");
+						return Object.keys(target).concat("count","length","next","proxy","realized","reset");
 					},
 					set(target,property,value) {
 						const i = parseInt(property);
