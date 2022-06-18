@@ -1,4 +1,4 @@
-# generx v0.0.7
+# generx v0.0.8
 
 JavaScript generators extended with forEach, map, reduce ... most standard Array methods, plus the abiliyt to reset and re-use the generator.
 
