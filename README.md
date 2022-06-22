@@ -1,4 +1,4 @@
-# generx v0.0.8
+# generx v0.0.9
 
 JavaScript generators extended with forEach, map, reduce ... most standard Array methods, plus the abiliyt to reset and re-use the generator.
 
@@ -157,22 +157,52 @@ If the array index is beyond the total yield count, the length will be extended 
 Deleting values at indexes works just like an array. Deleting a value at an index beyond the current `.count()` has no effect. Deleting a value at an index below the current
 `.count()` will set the value at the index to `undefined`.
 
-
 # Release History (reverse chronological order)
 
-2018-12-31 v0.0.7 Added `reset()`.
+2021-06-22 v0.0.9
 
-2018-11-10 v0.0.6 Enhanced documentation. 
+- @outis Iterating over a generx generator and accessing elements as an array don't play well together.
+Before that can be looked into, however, I've reorganized some of the code in the resettable generator
+proxy. The main changes are about encapsulation (the state of the resettable generator is moved from
+local variables to a state object) and abstraction to reduce repetition (2 duplicate code blocks from
+the proxy's array access handler have been refactored into a function).
+- @anywhichway Reformatted release history.
 
-2018-11-10 v0.0.5 Renamed `.finalize()` to `.realize()`. Changed return value to the array of all values. Added `.fill(value,start,end)`, `.join(separator)`, 
-`.pop()`, `.push(value)`, `.realized`.
+2021-06-18 v0.0.8
 
-2018-11-09 v0.0.4 Added unit tests for `count()`. Added support for delete and set on array indexes. Enhanced documentation.
+- @outis Simplified proxied next() of resettable generator (and added value parameter, as per the spec).
+- @outis Fix for issue reset() doesn't restore array access after iterating a generator & accessing it as an array. #1.
+- @outis Made next() of resettable generator non-enumerable.
 
-2018-11-08 v0.0.3 Added `count()`. Enhanced documentation. Improved async Promise resolution
+2018-12-31 v0.0.7 
 
-2018-11-07 v0.0.2 Fixed reverse. It was throwing an error due to undefined function. Modified `map` and `slice` to return a `generx` enhanced 
-generator rather than array. This will produce results faster for mapped functions and for slices less than the full generator yield results.
+- Added `reset()`.
+
+2018-11-10 v0.0.6 
+
+- Enhanced documentation. 
+
+2018-11-10 v0.0.5 
+
+- Renamed `.finalize()` to `.realize()`. Changed return value to the array of all values. 
+- Added `.fill(value,start,end)`, `.join(separator)`, `.pop()`, `.push(value)`, `.realized`.
+
+2018-11-09 v0.0.4 
+
+- Added unit tests for `count()`. Added support for delete and set on array indexes. 
+- Enhanced documentation.
+
+2018-11-08 v0.0.3 
+
+- Added `count()`. 
+- Enhanced documentation. 
+- Improved async Promise resolution
+
+2018-11-07 v0.0.2 
+
+- Fixed reverse. It was throwing an error due to undefined function. 
+- Modified `map` and `slice` to return a `generx` enhanced generator rather than array. This will
+- produce results faster for mapped functions and for slices less than the full generator yield results.
 
 2018-11-06 v0.0.1 Initial public release
 
