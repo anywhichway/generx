@@ -320,39 +320,65 @@ export function generx(f,recursed) {
 		}
 	}
 
-	function makeGenerator(target, thisArg, argumentsList) {
-		const generator = target.apply(thisArg, argumentsList),
-			  next = generator.next.bind(generator);
-		return { generator, next };
+	function ResettableState(target, self, args) {
+		this.generator = target.apply(self, args);
+		this.next = this.generator.next.bind(this.generator);
+		// mutable, so can't be set on prototype & must be reset for new states
+		this.realized = [];
+	}
+	ResettableState.prototype = {
+		// immutables, so can be set on prototype without requiring reset
+		count: 0,
+		length: Infinity,
+	};
+
+	/**
+	 * Replaces a stored promise from an asynchronous generator with the resolved value.
+	 */
+	async function realizeLater(target, state, next) {
+		let j = state.realized.length,
+			item = await next;
+		// replace Promise with resolved value
+		if(item.done) {
+			// if last value if not undefined, add it
+			// unfortunately, if the value was intended to be
+			// an undefined member of the array we will miss
+			if(item.value!==undefined) {
+				target[j] = state.realized[j] = item.value;
+				j++;
+			}
+			state.length = state.realized.length = Math.min(j, state.realized.length);
+			// delete evidence of the final Promise which resolved to done
+			delete target[j];
+			delete target[j+1];
+		} else {
+			// do not try to optimize by moving this up, results can legitimately contain undefined
+			target[j] = state.realized[j] = item.value;
+		}
+		return item.value;
 	}
 	
 	return new Proxy(f,{
 		apply(target,thisArg,argumentsList) {
-			let length = Infinity,
-				count = 0,
-				realized = [],
-				{ generator, next } = makeGenerator(...arguments);
+			let state = new ResettableState(...arguments);
 			// bounce to `next`, which can be overwritten to replace the current generator
-			Object.defineProperty(generator,"next", {
+			Object.defineProperty(state.generator, "next", {
 				enumerable:false,
-				value: (value) => next(value),
+				value: (value) => state.next(value),
 			});
-      // define reset to use the original arguments to create
-      // a new generator and assign it to the generator variable
-      Object.defineProperty(generator,"reset",{
-        enumerable:false,
-        value: () => 
-          {
-			length = Infinity;
-          	realized = [];
-			({ generator, next } =  makeGenerator(...arguments));
-			return generator;
-          }
-      });
-			const proxy = new Proxy(generator,{
+			// define reset to use the original arguments to create
+			// a new generator and assign it to the generator variable
+			Object.defineProperty(state.generator,"reset",{
+				enumerable:false,
+				value: () => {
+					state = new ResettableState(...arguments);
+					return state.generator;
+				},
+			});
+			const proxy = new Proxy(state.generator,{
 					deleteProperty(target,property) {
 						delete target[property];
-						delete realized[property];
+						delete state.realized[property];
 						return true;
 					},
 					get(target,property) {
@@ -361,93 +387,50 @@ export function generx(f,recursed) {
 						}
 						const i = parseInt(property);
 						if(i>=0) {
-							if(i<realized.length-1) {
-								if(i>=count) {
-									count = i+1;
+							if(i<state.realized.length-1) {
+								if(i>=state.count) {
+									state.count = i+1;
 								}
-								return realized[i];
+								return state.realized[i];
 							}
-							let next = generator.next();
+							let next = state.next();
 							// Note: The apparent duplicate code below ensures generator looks ahead to see if it is done
-							while(length===Infinity && !next.done) {
+							while(state.length===Infinity && !next.done) {
 								let value = isasync ? next : next.value;
 								if(isasync) {
-									value = new Promise(resolve => {
-										let j = realized.length;
-										resolve(next.then(item => {
-											// replace Promise with resolved value
-											if(item.done) {
-												// if last value if not undefined, add it
-												// unfortunately, if the value was intended to be
-												// an undefined member of the array we will miss
-												if(item.value!==undefined) {
-													target[j] = realized[j] = item.value;
-													j++;
-												}
-												length = realized.length = Math.min(j,realized.length);
-												// delete evidence of the final Promise which resolved to done
-												delete target[j];
-												delete target[j+1];
-											} else {
-											  // do not try to omptize by moving this up, results can legitimately contain undefined
-												target[j] = realized[j] = item.value;
-											}
-											return item.value;
-										}))
-									});
+									value = realizeLater(target, state, next);
 								}
 								// save the value to result array, might be a promise
-								target[realized.length] = realized[realized.length] = value;
-								if(i<realized.length-1) {
-									if(i>=count) {
-										count = i+1;
+								target[state.realized.length] = state.realized[state.realized.length] = value;
+								if(i<state.realized.length-1) {
+									if(i>=state.count) {
+										state.count = i+1;
 									}
-									return realized[i];
+									return state.realized[i];
 								}
 								// peek ahead so length gets set properly
-								next = generator.next();
+								next = state.next();
 								value = isasync ? next : next.value;
 								if(isasync) {
-									value = new Promise(resolve => {
-										let k = realized.length;
-										resolve(next.then(item => {
-											// replace Promise with resolved value
-											if(item.done) {
-												// if last value if not undefined, add it
-												// unfortunately, if the value was intended to be
-												// an undefined member of the array we will miss
-												if(item.value!==undefined) {
-													target[k] = realized[k] = item.value;
-													k++;
-												}
-												length = realized.length = Math.min(k,realized.length);
-												// delete evidence of the final Promise which resolved to done
-												delete target[k];
-												delete target[k+1];
-											} else {
-												target[k] = realized[k] = item.value;
-											}
-											return item.value;
-										}))
-									});
+									value = realizeLater(target, state, next);
 								} else {
 									if(next.done) {
 										if(value!==undefined) {
-											target[realized.length] = realized[realized.length] = value;
+											target[state.realized.length] = state.realized[state.realized.length] = value;
 										}
-										length = realized.length;
+										state.length = state.realized.length;
 									} else {
-										// do not try to omptize by moving this up, results can legitimately contain undefined
-										target[realized.length] = realized[realized.length] = value;
-										next = generator.next();
+										// do not try to optimize by moving this up, results can legitimately contain undefined
+										target[state.realized.length] = state.realized[state.realized.length] = value;
+										next = state.next();
 									}
 								}
 							}
-							length = realized.length; // change length from Infinity to actual length
-							if(i>=count) {
-								count = i+1;
+							state.length = state.realized.length; // change length from Infinity to actual length
+							if(i>=state.count) {
+								state.count = i+1;
 							}
-							return realized[i];
+							return state.realized[i];
 						}
 						return target[property];
 					},
@@ -459,36 +442,36 @@ export function generx(f,recursed) {
 						const i = parseInt(property);
 						if(i>=0) {
 							// force resolution of values before the set point
-							for(let j=realized.length;j<i && length===Infinity;j++) {
+							for(let j=state.realized.length;j<i && state.length===Infinity;j++) {
 								proxy[j];
 							}
-							realized[i] = value;
-							if(i>=count) {
-								count = i + 1;
+							state.realized[i] = value;
+							if(i>=state.count) {
+								state.count = i + 1;
 							}
-							if(i>=length) {
-								length = i + 1;
+							if(i>=state.length) {
+								state.length = i + 1;
 							}
 						}
 						target[property] = value;
 						return true;
 					},
 				});
-		Object.defineProperty(generator,"count",{value:() => count});
-		Object.defineProperty(generator,"length",{
+		Object.defineProperty(state.generator,"count",{value:() => state.count});
+		Object.defineProperty(state.generator,"length",{
 			get() { 
-				return length; 
+				return state.length;
 			},
 			set(value) { 
 				if(value<Infinity) { 
-					length = realized.length = value;
+					state.length = state.realized.length = value;
 				}
-				count = Math.min(count,realized.length); 
+				state.count = Math.min(state.count, state.realized.length);
 			}
 		});
-		Object.defineProperty(generator,"proxy",{value:proxy});
-		Object.defineProperty(generator,"realized",{get() { return realized.slice(); },set() { throw new Error("'realized' is read-only");}});
+		Object.defineProperty(state.generator,"proxy",{value:proxy});
+		Object.defineProperty(state.generator,"realized",{get() { return state.realized.slice(); },set() { throw new Error("'realized' is read-only");}});
 		return proxy;
-		}
+		},
 	});
 }
